@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>StudyBasket — Student Essentials (Sidebar)</title>
+  <meta name="description" content="StudyBasket: mobile-first marketplace for student essentials — buy/sell books, hostel items, notes & event tickets." />
+  <style>
+    /* ---------- Theme (mobile-first) ---------- */
+    :root{
+      --bg:#071227;
+      --card:#081828;
+      --muted:#9aa7b2;
+      --accent-1:#06b6d4;
+      --accent-2:#7c3aed;
+      --glass: rgba(255,255,255,0.03);
+      --radius:14px;
+      --maxw:980px;
+      --success:#10b981;
+      --danger:#ef4444;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,Arial;
+      background:linear-gradient(180deg,var(--bg),#041122);color:#e6eef2;
+      -webkit-font-smoothing:antialiased;display:flex;justify-content:center;padding:14px;
+    }
+    .app{width:100%;max-width:var(--maxw);background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:14px;padding:12px;box-shadow:0 10px 40px rgba(0,0,0,0.6);min-height:640px;display:flex;flex-direction:column}
+    /* header */
+    header{display:flex;align-items:center;gap:10px}
+    .hamburger{width:44px;height:44px;border-radius:10px;background:linear-gradient(90deg,var(--accent-1),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:800;color:#021;cursor:pointer}
+    .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#0ea5b7,#7c3aed);display:flex;align-items:center;justify-content:center;font-weight:800;color:#021}
+    .brand h1{margin:0;font-size:16px}
+    .brand p{margin:0;font-size:12px;color:var(--muted)}
+    .header-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+    .btn{padding:8px 10px;border-radius:10px;border:none;background:var(--accent-1);color:#021;font-weight:700;cursor:pointer}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+    /* sidebar */
+    .backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.45);opacity:0;pointer-events:none;transition:all 220ms;z-index:60}
+    .backdrop.show{opacity:1;pointer-events:auto}
+    .sidebar{position:fixed;left:-320px;top:0;height:100%;width:280px;background:linear-gradient(180deg,#02101a,#071227);box-shadow:12px 0 40px rgba(0,0,0,0.6);padding:16px;z-index:70;transition:left 260ms}
+    .sidebar.open{left:0}
+    .sidebar h3{margin:0 0 8px 0}
+    .nav{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+    .nav button{background:transparent;border:none;color:var(--muted);text-align:left;padding:10px;border-radius:8px;cursor:pointer}
+    .nav button:hover{background:rgba(255,255,255,0.02);color:#e6eef2}
+    /* viewport / screens */
+    .viewport{position:relative;flex:1;overflow:hidden;margin-top:12px}
+    .screen{position:absolute;inset:0;padding:12px;overflow:auto;border-radius:10px;background:transparent;opacity:0;transform:translateX(12px);pointer-events:none;transition:all 260ms ease}
+    .screen.open{opacity:1;transform:translateX(0);pointer-events:auto}
+    /* product grid */
+    .grid{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:720px){ .grid{grid-template-columns:repeat(2,1fr)} }
+    .card{background:var(--card);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
+    .thumb{height:110px;border-radius:8px;background:linear-gradient(180deg,#042033,#08273b);display:flex;align-items:center;justify-content:center;font-size:36px}
+    .meta{display:flex;justify-content:space-between;align-items:center}
+    .price{font-weight:800}
+    .small{font-size:12px;color:var(--muted)}
+    .muted{color:var(--muted)}
+    /* cart drawer */
+    .drawer{position:fixed;right:14px;top:80px;width:340px;max-width:92%;background:#021428;border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,0.03);display:none;z-index:80}
+    .drawer.open{display:block}
+    .cart-item{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,0.02)}
+    /* forms */
+    .sheet{background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border-radius:10px;padding:10px}
+    .form-row{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+    .form-row input, .form-row select, .form-row textarea{padding:10px;border-radius:8px;border:none;background:rgba(255,255,255,0.02);color:inherit}
+    .footer{font-size:12px;color:var(--muted);text-align:center;margin-top:10px}
+  </style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="StudyBasket app">
+
+    <!-- Header -->
+    <header>
+      <div class="hamburger" id="hamburger" aria-label="Open menu">☰</div>
+      <div class="logo">SB</div>
+      <div class="brand">
+        <h1>StudyBasket</h1>
+        <p class="muted">Student essentials — buy & sell on campus</p>
+      </div>
+      <div class="header-right">
+        <button class="btn ghost" id="openCartTop">Cart (<span id="cartCountTop">0</span>)</button>
+        <div id="authShort" class="muted small">Not logged</div>
+      </div>
+    </header>
+
+    <!-- Sidebar (sliding) -->
+    <div class="backdrop" id="backdrop"></div>
+    <aside class="sidebar" id="sidebar" aria-hidden="true">
+      <h3>Menu</h3>
+      <div class="nav" role="navigation">
+        <button data-screen="home">Home</button>
+        <button data-screen="products">Products</button>
+        <button data-screen="sell">Sell Item</button>
+        <button data-screen="reviews">Reviews</button>
+        <button data-screen="contact">Contact Us</button>
+        <button data-screen="about">About Us</button>
+        <button data-screen="auth">Login / Register</button>
+        <button data-screen="report">Report Issue</button>
+        <hr style="opacity:0.06"/>
+        <button id="closeSidebar" style="text-align:right" class="muted">Close ✕</button>
+      </div>
+      <div style="margin-top:12px" class="muted small">Support: support@studybasket.in</div>
+    </aside>
+
+    <!-- Viewport for screens -->
+    <div class="viewport">
+      <!-- Home -->
+      <section id="home" class="screen open">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <h2 style="margin:0">Welcome to StudyBasket</h2>
+            <div class="small muted">Campus-first student marketplace</div>
+          </div>
+          <div class="small muted">Kundrathur, Chennai</div>
+        </div>
+
+        <div style="margin-top:12px">
+          <h3 style="margin:0 0 8px 0">Featured</h3>
+          <div id="featuredGrid" class="grid"></div>
+        </div>
+
+        <div style="margin-top:14px">
+          <h4>Quick actions</h4>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+            <button class="btn" data-screen-open="products">Shop</button>
+            <button class="btn ghost" data-screen-open="sell">List an item</button>
+            <button class="btn ghost" data-screen-open="reviews">Reviews</button>
+          </div>
+        </div>
+
+        <div class="footer">© StudyBasket — Demo</div>
+      </section>
+
+      <!-- Products -->
+      <section id="products" class="screen">
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="productsSearch" placeholder="Search books, notes..." style="flex:1;padding:10px;border-radius:10px;border:none;background:rgba(255,255,255,0.02)" />
+          <button class="btn" id="openCartBtn">Cart (<span id="cartCount">0</span>)</button>
+        </div>
+        <div style="margin-top:12px" id="productGrid" class="grid"></div>
+        <div class="footer">End of list</div>
+      </section>
+
+      <!-- Sell -->
+      <section id="sell" class="screen">
+        <h3>Sell an item</h3>
+        <form id="sellForm" class="sheet" style="margin-top:10px">
+          <div class="form-row"><label class="small muted">Title</label><input id="s_title" required /></div>
+          <div class="form-row"><label class="small muted">Category</label><select id="s_cat"><option value="books">Books</option><option value="hostel">Hostel</option><option value="electronics">Electronics</option><option value="secondhand">Second-hand</option><option value="tickets">Tickets</option></select></div>
+          <div class="form-row"><label class="small muted">Price (₹)</label><input id="s_price" type="number" required /></div>
+          <div class="form-row"><label class="small muted">Condition</label><select id="s_cond"><option>Used</option><option>New</option></select></div>
+          <div class="form-row"><label class="small muted">Description</label><textarea id="s_desc" rows="3"></textarea></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn ghost" id="s_cancel">Cancel</button><button class="btn" type="submit">List Item</button></div>
+        </form>
+      </section>
+
+      <!-- Reviews -->
+      <section id="reviews" class="screen">
+        <h3>Comments & Reviews</h3>
+        <form id="reviewForm" style="margin-top:8px" class="sheet">
+          <div class="form-row"><input id="rv_name" placeholder="Your name (optional)" /></div>
+          <div class="form-row"><label class="small muted">Rating</label>
+            <select id="rv_rating"><option value="5">5 - Excellent</option><option value="4">4 - Good</option><option value="3">3 - Okay</option><option value="2">2 - Poor</option><option value="1">1 - Bad</option></select>
+          </div>
+          <div class="form-row"><textarea id="rv_text" rows="3" placeholder="Write your review..."></textarea></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end"><button type="reset" class="btn ghost">Clear</button><button class="btn" type="submit">Post Review</button></div>
+        </form>
+
+        <div style="margin-top:12px">
+          <h4>All reviews</h4>
+          <div id="reviewsList" style="margin-top:8px;display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+      </section>
+
+      <!-- Contact (Option B content inserted) -->
+      <section id="contact" class="screen">
+        <h3>Contact Us</h3>
+        <p class="muted">Have a question, issue, or suggestion? We’re here to help! StudyBasket is a student marketplace — we want your experience to be smooth and safe.</p>
+
+        <div class="sheet" style="margin-top:10px">
+          <strong>Support Channels</strong>
+          <div class="muted" style="margin-top:6px">
+            <div><strong>Email:</strong> support@studybasket.in</div>
+            <div><strong>Phone:</strong> +91 98765 43210</div>
+            <div><strong>Instagram:</strong> @studybasket_official</div>
+          </div>
+
+          <div style="margin-top:10px">
+            <strong>Campus Address</strong>
+            <div class="muted" style="margin-top:6px">
+              StudyBasket – Students Help Desk<br>
+              Chennai Institute of Technology,<br>
+              Kundrathur, Chennai – 600069<br>
+              Tamil Nadu, India
+            </div>
+          </div>
+
+          <div style="margin-top:10px">
+            <strong>What We Help With</strong>
+            <ul class="muted">
+              <li>Report a fake or suspicious seller</li>
+              <li>Order issues (not received / wrong item)</li>
+              <li>Account login or verification problems</li>
+              <li>Refund or payment issues</li>
+              <li>Incorrect product details</li>
+              <li>Help posting an item</li>
+              <li>Feedback and suggestions</li>
+            </ul>
+          </div>
+
+          <div style="margin-top:10px">
+            <strong>Support Hours</strong>
+            <div class="muted">Mon–Sat: 9:00 AM — 6:00 PM (Closed Sundays & public holidays)</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <h4>Quick contact form</h4>
+          <form id="quickContact" class="sheet" style="margin-top:8px">
+            <div class="form-row"><input id="qc_name" placeholder="Your name" /></div>
+            <div class="form-row"><input id="qc_email" placeholder="Email" /></div>
+            <div class="form-row"><select id="qc_type"><option>Report a fake seller</option><option>Order issue</option><option>Refund</option><option>Other</option></select></div>
+            <div class="form-row"><textarea id="qc_msg" rows="3" placeholder="Describe your issue"></textarea></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn ghost" type="reset">Reset</button><button class="btn" type="submit">Send</button></div>
+          </form>
+        </div>
+      </section>
+
+      <!-- About -->
+      <section id="about" class="screen">
+        <h3>About StudyBasket</h3>
+        <div class="muted">StudyBasket is a demo, campus-first marketplace for students — buy and sell books, notes, hostel essentials, and event tickets. Built as a project to demonstrate a mobile-friendly marketplace experience.</div>
+        <ul class="muted" style="margin-top:8px">
+          <li>Fast campus pickup</li>
+          <li>Student-only listings</li>
+          <li>Demo admin: admin@studybasket / admin123</li>
+        </ul>
+      </section>
+
+      <!-- Auth/Profile -->
+      <section id="auth" class="screen">
+        <h3>Login / Register</h3>
+        <div id="profileBox" class="sheet" style="margin-top:8px"></div>
+
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn ghost" id="showLogin">Login</button>
+          <button class="btn" id="showSignup">Signup</button>
+        </div>
+
+        <form id="loginForm" class="sheet" style="margin-top:10px;display:block">
+          <div class="form-row"><input id="li_email" placeholder="Email" type="email" /></div>
+          <div class="form-row"><input id="li_pass" placeholder="Password" type="password" /></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn ghost" type="reset">Reset</button><button class="btn" type="submit">Login</button></div>
+          <div class="muted small" style="margin-top:8px">Demo admin: admin@studybasket / admin123</div>
+        </form>
+
+        <form id="signupForm" class="sheet" style="margin-top:10px;display:none">
+          <div class="form-row"><input id="su_name" placeholder="Name" /></div>
+          <div class="form-row"><input id="su_email" placeholder="Email" type="email" /></div>
+          <div class="form-row"><input id="su_pass" placeholder="Password" type="password" /></div>
+          <div class="form-row"><label class="small muted">Role</label><select id="su_role"><option value="user">user</option><option value="admin">admin (for testing)</option></select></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn ghost" type="reset">Reset</button><button class="btn" type="submit">Signup</button></div>
+        </form>
+      </section>
+
+      <!-- Report -->
+      <section id="report" class="screen">
+        <h3>Report an issue</h3>
+        <form id="reportForm" class="sheet" style="margin-top:10px">
+          <div class="form-row"><input id="r_name" placeholder="Your name (optional)" /></div>
+          <div class="form-row"><input id="r_email" placeholder="Your email (optional)" /></div>
+          <div class="form-row"><select id="r_type"><option>Bug</option><option>Fake listing</option><option>Spam</option><option>Other</option></select></div>
+          <div class="form-row"><textarea id="r_msg" rows="4" placeholder="Describe the issue"></textarea></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn ghost" type="reset">Clear</button><button class="btn" type="submit">Report</button></div>
+        </form>
+
+        <div style="margin-top:12px">
+          <h4>Reports (local)</h4>
+          <div id="reportsList" style="margin-top:8px;display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Cart drawer -->
+    <aside class="drawer" id="cartDrawer" aria-hidden="true">
+      <h3 style="margin:0 0 8px 0">Your Cart</h3>
+      <div id="cartItems"></div>
+      <div style="display:flex;justify-content:space-between;padding-top:10px"><div class="muted">Total</div><div id="cartTotal" style="font-weight:700">₹0</div></div>
+      <div style="margin-top:10px;display:flex;gap:8px"><button class="btn ghost" id="closeCart">Close</button><button class="btn" id="payNow">Pay</button></div>
+    </aside>
+
+  </div>
+
+  <script>
+    /* ---------- Client-only app logic (localStorage) ---------- */
+    const qs = s => document.querySelector(s);
+    const qsa = s => Array.from(document.querySelectorAll(s));
+    const LS_PROD = 'sb_prod_v1';
+    const LS_REV = 'sb_rev_v1';
+    const LS_USERS = 'sb_users_v1';
+    const LS_SESS = 'sb_sess_v1';
+    const LS_CART = 'sb_cart_v1';
+    const LS_REP = 'sb_rep_v1';
+
+    function lsGet(k, d=[]){ try{ const v = localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){return d} }
+    function lsSet(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+
+    // initialize sample data if empty
+    if(!lsGet(LS_PROD).length){
+      lsSet(LS_PROD, [
+        {id:1,title:'Engineering Math - Sem 3',category:'books',price:120,cond:'Used',desc:'Handwritten, clear diagrams'},
+        {id:2,title:'Hostel Bed Sheet Set',category:'hostel',price:350,cond:'New',desc:'Good cotton set'},
+        {id:3,title:'Scientific Calculator',category:'electronics',price:600,cond:'Used',desc:'Working condition'},
+        {id:4,title:'Backpack (used)',category:'secondhand',price:250,cond:'Used',desc:'No tears'},
+        {id:5,title:'Fest Pass',category:'tickets',price:50,cond:'New',desc:'One-day pass'}
+      ]);
+    }
+    if(!lsGet(LS_REV).length) lsSet(LS_REV, []);
+    if(!lsGet(LS_USERS).length) {
+      lsSet(LS_USERS, [{id:1,name:'Admin',email:'admin@studybasket',password:'admin123',role:'admin'}]);
+    }
+    if(!lsGet(LS_CART).length) lsSet(LS_CART, []);
+    if(!lsGet(LS_REP).length) lsSet(LS_REP, []);
+
+    // helpers
+    function currentUser(){ return lsGet(LS_SESS, null); }
+    function usersList(){ return lsGet(LS_USERS); }
+    function productsList(){ return lsGet(LS_PROD); }
+    function saveProducts(a){ lsSet(LS_PROD, a); }
+    function reviewsList(){ return lsGet(LS_REV); }
+    function reportsList(){ return lsGet(LS_REP); }
+
+    function formatINR(n){ return '₹'+Number(n).toLocaleString('en-IN'); }
+    function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    // sidebar toggle
+    const hamburger = qs('#hamburger'), sidebar = qs('#sidebar'), backdrop = qs('#backdrop'), closeSidebar = qs('#closeSidebar');
+    function openSidebar(){ sidebar.classList.add('open'); backdrop.classList.add('show'); sidebar.setAttribute('aria-hidden','false'); }
+    function closeSidebarFn(){ sidebar.classList.remove('open'); backdrop.classList.remove('show'); sidebar.setAttribute('aria-hidden','true'); }
+    hamburger.addEventListener('click', openSidebar);
+    closeSidebar.addEventListener('click', closeSidebarFn);
+    backdrop.addEventListener('click', closeSidebarFn);
+
+    // nav buttons in sidebar
+    qsa('.nav button[data-screen]').forEach(b => b.addEventListener('click', ()=>{
+      const screen = b.dataset.screen;
+      openScreen(screen);
+      closeSidebarFn();
+    }));
+    qsa('[data-screen-open]').forEach(b => b.addEventListener('click', ()=>{ openScreen(b.dataset.screenOpen); }));
+
+    // screens
+    function openScreen(id){
+      qsa('.screen').forEach(s => s.classList.remove('open'));
+      const el = qs('#'+id);
+      if(el) el.classList.add('open');
+      // some screens need render calls
+      if(id==='home') renderFeatured();
+      if(id==='products') renderProducts();
+      if(id==='reviews') renderReviews();
+      if(id==='auth') renderProfileBox();
+      if(id==='report') renderReports();
+    }
+
+    /* ---------- Products & Cart ---------- */
+    function cartGet(){ return lsGet(LS_CART); }
+    function cartSave(a){ lsSet(LS_CART, a); updateCartUI(); }
+    function cartAdd(p){ const c = cartGet(); c.push(p); cartSave(c); }
+    function cartRemove(i){ const c = cartGet(); c.splice(i,1); cartSave(c); }
+    function cartClear(){ lsSet(LS_CART, []); updateCartUI(); }
+
+    function renderProducts(q=''){
+      const grid = qs('#productGrid'); grid.innerHTML = '';
+      const list = productsList().filter(p => !q || (`${p.title} ${p.desc} ${p.category}`).toLowerCase().includes(q.toLowerCase()));
+      list.forEach(p => {
+        const el = document.createElement('div'); el.className='card';
+        el.innerHTML = `<div class="thumb">📘</div>
+          <div>
+            <div class="meta"><div><strong>${escapeHtml(p.title)}</strong><div class="small muted">${escapeHtml(p.category)} • ${escapeHtml(p.cond||'')}</div></div><div class="price">${formatINR(p.price)}</div></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button class="btn ghost viewBtn" data-id="${p.id}">View</button><button class="btn addBtn" data-id="${p.id}">Add</button></div>
+          </div>`;
+        grid.appendChild(el);
+      });
+      qsa('.addBtn').forEach(b => b.onclick = () => { const id = Number(b.dataset.id); const p = productsList().find(x=>x.id===id); cartAdd(p); b.textContent='Added'; b.disabled=true; setTimeout(()=>{b.textContent='Add';b.disabled=false;},700);});
+      qsa('.viewBtn').forEach(b => b.onclick = ()=> openProductModal(Number(b.dataset.id)));
+      qs('#productsSearch').oninput = (e)=> renderProducts(e.target.value);
+      updateCartUI();
+    }
+
+    function renderFeatured(){
+      const cont = qs('#featuredGrid'); cont.innerHTML='';
+      productsList().slice(0,4).forEach(p => {
+        const c = document.createElement('div'); c.className='card'; c.innerHTML = `<div style="display:flex;gap:10px;align-items:center"><div style="width:64px;height:64px;border-radius:8px;background:#032233;display:flex;align-items:center;justify-content:center">📘</div><div><strong>${escapeHtml(p.title)}</strong><div class="small muted">${escapeHtml(p.category)} • ${formatINR(p.price)}</div></div></div>`; cont.appendChild(c);
+      });
+    }
+
+    function updateCartUI(){
+      const el = qs('#cartItems'); el.innerHTML=''; let total=0; const c = cartGet();
+      c.forEach((it,idx) => {
+        total += it.price;
+        const row = document.createElement('div'); row.className='cart-item';
+        row.innerHTML = `<div style="width:44px;height:44px;border-radius:8px;background:#07182b;display:flex;align-items:center;justify-content:center">📘</div>
+          <div style="flex:1"><div style="font-weight:600">${escapeHtml(it.title)}</div><div class="small muted">${escapeHtml(it.category)}</div></div>
+          <div style="text-align:right">${formatINR(it.price)}<div><button data-remove="${idx}" class="btn ghost" style="margin-top:6px">Remove</button></div></div>`;
+        el.appendChild(row);
+      });
+      qs('#cartTotal').textContent = formatINR(total);
+      qs('#cartCount').textContent = c.length;
+      qs('#cartCountTop').textContent = c.length;
+    }
+
+    qs('#openCartBtn').addEventListener('click', ()=> qs('#cartDrawer').classList.toggle('open'));
+    qs('#openCartTop').addEventListener('click', ()=> qs('#cartDrawer').classList.toggle('open'));
+    qs('#closeCart').addEventListener('click', ()=> qs('#cartDrawer').classList.remove('open'));
+    qs('#cartItems').addEventListener('click', e => { const b = e.target.closest('button[data-remove]'); if(!b) return; cartRemove(Number(b.dataset.remove)); });
+
+    qs('#payNow').addEventListener('click', ()=> {
+      const c = cartGet(); if(c.length===0) { alert('Cart is empty'); return; }
+      if(!currentUser()){ if(confirm('Please login to place orders. Go to Login?')) openScreen('auth'); return; }
+      alert('Order placed (demo).'); cartClear();
+    });
+
+    /* ---------- Product modal ---------- */
+    function openProductModal(id){
+      const p = productsList().find(x=>x.id===id); if(!p) return;
+      const modal = document.createElement('div'); modal.style.position='fixed'; modal.style.inset='0'; modal.style.display='flex'; modal.style.alignItems='center'; modal.style.justifyContent='center'; modal.style.background='rgba(0,0,0,0.6)'; modal.style.zIndex=120;
+      modal.innerHTML = `<div style="background:var(--card);padding:12px;border-radius:10px;max-width:420px;width:92%;"><div style="display:flex;gap:12px"><div style="width:100px;height:100px;border-radius:8px;background:#042033;display:flex;align-items:center;justify-content:center">📘</div><div style="flex:1"><h3 style="margin:0">${escapeHtml(p.title)}</h3><div class="small muted">${escapeHtml(p.category)} • ${escapeHtml(p.cond||'')}</div><p style="margin-top:8px">${escapeHtml(p.desc||'')}</p><div style="display:flex;gap:8px;justify-content:flex-end"><button id="pmAdd" class="btn">Add to cart</button><button id="pmClose" class="btn ghost">Close</button></div></div></div></div>`;
+      document.body.appendChild(modal);
+      modal.querySelector('#pmAdd').onclick = ()=> { cartAdd(p); alert('Added to cart'); modal.remove(); };
+      modal.querySelector('#pmClose').onclick = ()=> modal.remove();
+      modal.addEventListener('click', e => { if(e.target === modal) modal.remove(); });
+    }
+
+    /* ---------- Sell form ---------- */
+    qs('#sellForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const title = qs('#s_title').value.trim();
+      const cat = qs('#s_cat').value;
+      const price = Number(qs('#s_price').value);
+      const cond = qs('#s_cond').value;
+      const desc = qs('#s_desc').value.trim();
+      if(!title || !price) return alert('Enter title and price');
+      const arr = productsList(); arr.unshift({ id: Date.now(), title, category: cat, price, cond, desc }); saveProducts(arr);
+      alert('Item listed (local demo).');
+      qs('#s_title').value=''; qs('#s_price').value=''; qs('#s_desc').value='';
+      openScreen('products');
+      renderProducts();
+    });
+    qs('#s_cancel').addEventListener('click', () => { qs('#s_title').value=''; openScreen('home'); });
+
+    /* ---------- Reviews ---------- */
+    function renderReviews(){
+      const wrap = qs('#reviewsList'); wrap.innerHTML=''; const arr = reviewsList().slice().reverse();
+      if(arr.length === 0){ wrap.innerHTML = '<div class="muted">No reviews yet — be the first!</div>'; return; }
+      arr.forEach(r => {
+        const c = document.createElement('div'); c.className='card';
+        c.innerHTML = `<div style="display:flex;justify-content:space-between"><strong>${escapeHtml(r.name||'Anonymous')}</strong><div class="small muted">${new Date(r.ts).toLocaleString()}</div></div><div style="margin-top:8px">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}<div style="margin-top:6px" class="muted">${escapeHtml(r.text)}</div></div>`;
+        wrap.appendChild(c);
+      });
+    }
+    qs('#reviewForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const name = qs('#rv_name').value.trim(); const rating = Number(qs('#rv_rating').value); const text = qs('#rv_text').value.trim();
+      if(!text) return alert('Write a review');
+      const arr = reviewsList(); arr.push({ id: Date.now(), name, rating, text, ts: Date.now() }); lsSet(LS_REV, arr);
+      qs('#rv_name').value=''; qs('#rv_text').value=''; qs('#rv_rating').value='5';
+      renderReviews(); openScreen('reviews');
+    });
+
+    /* ---------- Quick Contact ---------- */
+    qs('#quickContact').addEventListener('submit', e => {
+      e.preventDefault();
+      alert('Message recorded (demo). Support will contact you via email in a real system.');
+      qs('#qc_name').value=''; qs('#qc_email').value=''; qs('#qc_msg').value=''; openScreen('contact');
+    });
+
+    /* ---------- Auth (signup/login/profile) ---------- */
+    function saveUsers(a){ lsSet(LS_USERS, a); }
+    function signup({name,email,password,role='user'}){ const u = usersList(); if(u.find(x=>x.email===email)) return {ok:false,msg:'Email exists'}; u.push({id:Date.now(),name,email,password,role}); saveUsers(u); return {ok:true}; }
+    function login({email,password}){ const u = usersList().find(x=>x.email===email && x.password===password); if(!u) return {ok:false,msg:'Invalid credentials'}; lsSet(LS_SESS, u); return {ok:true,user:u}; }
+    function logout(){ localStorage.removeItem(LS_SESS); renderProfileBox(); alert('Logged out'); }
+
+    function renderProfileBox(){
+      const box = qs('#profileBox'); box.innerHTML=''; const u = currentUser();
+      const short = qs('#authShort');
+      if(u){
+        box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${escapeHtml(u.name)}</strong><div class="small muted">${escapeHtml(u.email)} • ${escapeHtml(u.role)}</div></div><div><button id="logoutBtn" class="btn ghost">Logout</button></div></div>`;
+        short.textContent = u.name;
+        qs('#logoutBtn').onclick = ()=> logout();
+        // admin tools
+        if(u.role === 'admin'){
+          const adminRow = document.createElement('div'); adminRow.style.marginTop='8px';
+          adminRow.innerHTML = `<div class="small muted">Admin</div><div style="display:flex;gap:8px;margin-top:6px"><button id="adminManage" class="btn ghost">Manage Products</button><button id="adminReports" class="btn ghost">View Reports</button></div>`;
+          box.appendChild(adminRow);
+          qs('#adminManage').onclick = () => manageProductsModal();
+          qs('#adminReports').onclick = () => openScreen('report');
+        }
+      } else {
+        box.innerHTML = `<div class="muted">You are not logged in. Use login/signup below.</div>`;
+        short.textContent = 'Not logged';
+      }
+    }
+
+    // show/hide login/signup
+    qs('#showLogin').addEventListener('click', ()=> { qs('#loginForm').style.display='block'; qs('#signupForm').style.display='none'; });
+    qs('#showSignup').addEventListener('click', ()=> { qs('#loginForm').style.display='none'; qs('#signupForm').style.display='block'; });
+
+    qs('#signupForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const name = qs('#su_name').value.trim(); const email = qs('#su_email').value.trim(); const pass = qs('#su_pass').value; const role = qs('#su_role').value;
+      if(!name || !email || !pass) return alert('Fill all fields');
+      const res = signup({name,email,password:pass,role});
+      if(!res.ok) return alert(res.msg);
+      alert('Signup success. Please login.');
+      qs('#su_name').value=''; qs('#su_email').value=''; qs('#su_pass').value=''; qs('#su_role').value='user';
+      qs('#showLogin').click();
+    });
+
+    qs('#loginForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const email = qs('#li_email').value.trim(); const pass = qs('#li_pass').value;
+      if(!email || !pass) return alert('Fill all fields');
+      const res = login({email,password:pass});
+      if(!res.ok) return alert(res.msg);
+      alert('Login successful');
+      qs('#li_email').value=''; qs('#li_pass').value=''; renderProfileBox(); openScreen('home');
+    });
+
+    /* ---------- Reports ---------- */
+    qs('#reportForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const name = qs('#r_name').value.trim(); const email = qs('#r_email').value.trim(); const type = qs('#r_type').value; const msg = qs('#r_msg').value.trim();
+      if(!msg) return alert('Describe the issue');
+      const arr = reportsList(); arr.unshift({id:Date.now(), name, email, type, msg, ts:Date.now()}); lsSet(LS_REP, arr);
+      alert('Report recorded (local).');
+      qs('#r_name').value=''; qs('#r_email').value=''; qs('#r_msg').value='';
+      renderReports(); openScreen('report');
+    });
+
+    function renderReports(){
+      const wrap = qs('#reportsList'); wrap.innerHTML=''; const arr = reportsList();
+      if(arr.length === 0){ wrap.innerHTML = '<div class="muted">No reports yet</div>'; return; }
+      arr.forEach(r => {
+        const c = document.createElement('div'); c.className='card';
+        c.innerHTML = `<div style="display:flex;justify-content:space-between"><div><strong>${escapeHtml(r.type)}</strong><div class="small muted">${escapeHtml(r.name||'Anonymous')} • ${escapeHtml(r.email||'')}</div></div><div class="small muted">${new Date(r.ts).toLocaleString()}</div></div><div style="margin-top:8px" class="muted">${escapeHtml(r.msg)}</div>`;
+        wrap.appendChild(c);
+      });
+    }
+
+    /* ---------- Admin manage products modal ---------- */
+    function manageProductsModal(){
+      const modal = document.createElement('div'); modal.style.position='fixed'; modal.style.inset='0'; modal.style.display='flex'; modal.style.alignItems='center'; modal.style.justifyContent='center'; modal.style.background='rgba(0,0,0,0.6)'; modal.style.zIndex=200;
+      modal.innerHTML = `<div style="width:92%;max-width:720px;background:var(--card);padding:12px;border-radius:10px;max-height:80vh;overflow:auto"><h3 style="margin:0 0 8px 0">Manage Products</h3><div id="adminList"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button id="admClose" class="btn ghost">Close</button></div></div>`;
+      document.body.appendChild(modal);
+      const adminList = modal.querySelector('#adminList');
+      function renderAdmin(){
+        adminList.innerHTML = '';
+        productsList().forEach(p => {
+          const r = document.createElement('div'); r.className='card';
+          r.innerHTML = `<div style="display:flex;justify-content:space-between"><div><strong>${escapeHtml(p.title)}</strong><div class="small muted">${escapeHtml(p.category)} • ${formatINR(p.price)}</div></div><div><button class="btn ghost" data-edit="${p.id}">Edit</button><button class="btn" data-del="${p.id}">Delete</button></div></div>`;
+          adminList.appendChild(r);
+        });
+        adminList.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { if(!confirm('Delete this product?')) return; const id = Number(b.dataset.del); saveProducts(productsList().filter(x=>x.id!==id)); renderAdmin(); renderProducts(); });
+        adminList.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => {
+          const id = Number(b.dataset.edit); const p = productsList().find(x=>x.id===id);
+          const form = document.createElement('div'); form.className='sheet'; form.style.marginTop='8px';
+          form.innerHTML = `<div class="form-row"><input id="adm_title" value="${escapeHtml(p.title)}" /></div>
+            <div class="form-row"><select id="adm_cat"><option value="books"${p.category==='books'?' selected':''}>Books</option><option value="hostel"${p.category==='hostel'?' selected':''}>Hostel</option><option value="electronics"${p.category==='electronics'?' selected':''}>Electronics</option><option value="secondhand"${p.category==='secondhand'?' selected':''}>Second-hand</option><option value="tickets"${p.category==='tickets'?' selected':''}>Tickets</option></select></div>
+            <div class="form-row"><input id="adm_price" type="number" value="${p.price}" /></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end"><button id="adm_cancel" class="btn ghost">Cancel</button><button id="adm_save" class="btn">Save</button></div>`;
+          r.appendChild(form);
+          modal.querySelector('#adm_cancel').onclick = () => renderAdmin();
+          modal.querySelector('#adm_save').onclick = () => {
+            const title = modal.querySelector('#adm_title').value; const cat = modal.querySelector('#adm_cat').value; const price = Number(modal.querySelector('#adm_price').value);
+            saveProducts(productsList().map(x=> x.id===id ? {...x, title, category:cat, price} : x ));
+            renderAdmin(); renderProducts();
+          };
+        });
+      }
+      renderAdmin();
+      modal.querySelector('#admClose').onclick = () => modal.remove();
+      modal.addEventListener('click', e => { if(e.target === modal) modal.remove(); });
+    }
+
+    /* ---------- Init ---------- */
+    document.addEventListener('DOMContentLoaded', () => {
+      renderFeatured(); renderProducts(); renderReviews(); renderReports(); renderProfileBox(); updateCartUI();
+      // sidebar keyboard close
+      document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closeSidebarFn(); qs('#cartDrawer').classList.remove('open'); const mod = document.querySelector('div[role="dialog"]'); if(mod) mod.remove(); } });
+    });
+
+  </script>
+</body>
+</html>
